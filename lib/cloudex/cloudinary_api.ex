@@ -173,9 +173,9 @@ defmodule Cloudex.CloudinaryApi do
 
   defp parse_deletion_status(%{} = deletion_status, _), do: {:error, {:bad_deletion_status, deletion_status}}
 
-  defp do_parse_deletion_status([_, "deleted"]), do: :ok
-  defp do_parse_deletion_status([_, "not_found"]), do: {:error, :not_found}
-  defp do_parse_deletion_status([_, anything_else]), do: {:error, :bad_deletion_status_code, anything_else}
+  defp do_parse_deletion_status([{_, "deleted"}]), do: :ok
+  defp do_parse_deletion_status([{_, "not_found"}]), do: {:error, :not_found}
+  defp do_parse_deletion_status([{_, anything_else}]), do: {:error, :bad_deletion_status_code, anything_else}
 
   @spec post(tuple | String.t(), binary, map) :: {:ok, %Cloudex.UploadedImage{}} | {:error, any}
   defp post(body, source, opts) do
