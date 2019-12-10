@@ -5,6 +5,9 @@ Cloudex
 Cloudex is an Elixir library that can upload image files or urls to Cloudinary.
 There is also a [CLI tool](https://github.com/smeevil/cloudex_cli) available.
 
+NOTE: This is Trifera fork of Cloudex. Cloudex does not seem to be maintained since June 2019;
+we need a robust way of telling whether an image deletion was a success, hence the fork.
+
 ## Getting started
 
 ```elixir

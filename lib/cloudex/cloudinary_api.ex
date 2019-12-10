@@ -122,6 +122,7 @@ defmodule Cloudex.CloudinaryApi do
         :: {:ok, HTTPoison.Response.t | HTTPoison.AsyncResponse.t} | {:error, HTTPoison.Error.t}
   defp delete_file(item, opts) do
     HTTPoison.delete(delete_url_for(opts, item), @cloudinary_headers, credentials())
+    |> process_deletion_result()
   end
 
   defp delete_url_for(%{resource_type: resource_type}, item), do: delete_url(resource_type, item)
@@ -146,13 +147,42 @@ defmodule Cloudex.CloudinaryApi do
     "#{@base_url}#{Cloudex.Settings.get(:cloud_name)}/resources/#{resource_type}/upload?prefix=#{prefix}"
   end
 
+  defp process_deletion_result({:ok, %HTTPoison.Response{status_code: 200, body: body}}) when is_binary(body) do
+    with {:ok, body_json} <- Jason.decode(body) do
+      parse_deletion_result_json(body_json)
+    end
+  end
+
+  defp process_deletion_result({:ok, response}) do
+    {:error, {:bad_response, response}}
+  end
+
+  defp process_deletion_result(anything_else), do: anything_else
+
+  defp parse_deletion_result_json(%{"deleted" => %{} = deletion_status}) do
+    parse_deletion_status(deletion_status, map_size(deletion_status))
+  end
+
+  defp parse_deletion_result_json(anything_else), do: {:error, {:bad_response_payload, anything_else}}
+
+  defp parse_deletion_status(%{} = deletion_status, 1) do
+    deletion_status
+    |> Enum.into([])
+    |> do_parse_deletion_status()
+  end
+
+  defp parse_deletion_status(%{} = deletion_status, _), do: {:error, {:bad_deletion_status, deletion_status}}
+
+  defp do_parse_deletion_status([_, "deleted"]), do: :ok
+  defp do_parse_deletion_status([_, "not_found"]), do: {:error, :not_found}
+  defp do_parse_deletion_status([_, anything_else]), do: {:error, :bad_deletion_status_code, anything_else}
+
   @spec post(tuple | String.t(), binary, map) :: {:ok, %Cloudex.UploadedImage{}} | {:error, any}
   defp post(body, source, opts) do
     with {:ok, raw_response} <- common_post(body, opts),
          {:ok, response} <- @json_library.decode(raw_response.body),
          do: handle_response(response, source)
   end
-
 
   defp common_post(body, opts) do
     HTTPoison.request(:post, url_for(opts), body, @cloudinary_headers, credentials())
